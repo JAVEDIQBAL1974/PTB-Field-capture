@@ -1,0 +1,15 @@
+{
+  "name": "ptb-field-capture-mobile",
+  "version": "1.0.0",
+  "description": "PTB Digital Track & Trace — native Android wrapper (Capacitor) around the offline-first field capture web app.",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "open:android": "npx cap open android",
+    "build:apk:local": "npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  }
+}
