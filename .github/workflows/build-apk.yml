@@ -34,8 +34,10 @@ jobs:
           npm install
           npm install -D typescript
 
-      - name: Capacitor sync
-        run: npx cap sync android
+      - name: Add Android platform & sync
+        run: |
+          npx cap add android || true
+          npx cap sync android
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
