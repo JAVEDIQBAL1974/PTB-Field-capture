@@ -7,6 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch: {}   # allows manual run from Actions tab
 
+
 jobs:
   build-debug-apk:
     runs-on: ubuntu-latest
