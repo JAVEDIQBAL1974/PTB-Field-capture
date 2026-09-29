@@ -34,6 +34,32 @@ jobs:
           npm install
           npm install -D typescript
 
+      - name: Ensure www folder exists
+        run: |
+          mkdir -p www
+          if [ ! -f www/index.html ]; then
+            echo '<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PTB Field Capture</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; background:#0f172a; color:#e2e8f0; }
+    .card { text-align:center; padding:2rem; }
+    h1 { margin:0 0 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>PTB Field Capture</h1>
+    <p>Pakistan Tobacco Board – Digital Track & Trace</p>
+    <p>Offline-first field capture app</p>
+  </div>
+</body>
+</html>' > www/index.html
+          fi
+
       - name: Add Android platform & sync
         run: |
           npx cap add android || true
