@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PTB Field Capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1B3A6B; --navy-dark:#0F2547; --ink:#1C2230; --muted:#6B7280;
+    --canvas:#EEF1F5; --card:#FFFFFF; --line:#E3E7ED; --gold:#C8A84B;
+    --green:#2E7D5B; --green-bg:#E7F3ED; --amber:#B5791F; --amber-bg:#FBF0DD;
+    --flag:#B0432E; --flag-bg:#FCEAE5;
+    font-family:'Inter',system-ui,sans-serif;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;background:var(--canvas);color:var(--ink);}
+  body{display:flex;align-items:flex-start;justify-content:center;min-height:100%;padding:28px 12px;}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){--canvas:#0D1117;--card:#161B22;--line:#262C36;--ink:#E6E9EF;--muted:#8B95A5;}
+  }
+  :root[data-theme="dark"]{--canvas:#0D1117;--card:#161B22;--line:#262C36;--ink:#E6E9EF;--muted:#8B95A5;}
+
+  .phone{width:390px;max-width:100%;background:var(--card);border-radius:28px;box-shadow:0 20px 60px rgba(15,37,71,.18);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column;height:800px;max-height:92vh;}
+  .statusbar{background:var(--navy-dark);color:#fff;padding:14px 18px 12px;flex-shrink:0;}
+  .statusbar-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#AAB8D1;margin-bottom:10px;}
+  .conn{display:flex;align-items:center;gap:12px;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(46,125,91,.35);}
+  .dot.off{background:var(--amber);box-shadow:0 0 0 3px rgba(181,121,31,.35);}
+  .connlabel{font-size:14px;font-weight:600;}
+  .queuepill{font-size:11.5px;font-weight:600;background:rgba(255,255,255,.12);padding:3px 9px;border-radius:20px;}
+  .toggle{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;cursor:pointer;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.2px;}
+  .brand span{color:var(--gold);}
+
+  .screen{flex:1;overflow-y:auto;padding:18px 18px 8px;}
+  .screen h1{font-size:20px;margin:2px 0 4px;font-weight:800;}
+  .screen .sub{color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.5;}
+
+  .rolecard{border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-bottom:10px;cursor:pointer;background:var(--card);transition:border-color .15s,transform .1s;}
+  .rolecard:active{transform:scale(.98);}
+  .rolecard:hover{border-color:var(--navy);}
+  .rolecard b{display:block;font-size:14.5px;margin-bottom:2px;}
+  .rolecard span{font-size:12.5px;color:var(--muted);}
+
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px;}
+  .statcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .statcard .n{font-size:24px;font-weight:800;color:var(--navy);}
+  :root[data-theme="dark"] .statcard .n{color:#8FA8D9;}
+  .statcard .l{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  .sectiontitle{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin:0 0 10px;}
+
+  .txcard{border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);}
+  .txcard .lotid{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12.5px;font-weight:600;background:var(--canvas);padding:2px 7px;border-radius:6px;letter-spacing:.3px;}
+  .txcard .meta{font-size:12px;color:var(--muted);margin-top:5px;}
+  .badge{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:20px;white-space:nowrap;}
+  .badge.queued{background:var(--amber-bg);color:var(--amber);}
+  .badge.synced{background:var(--green-bg);color:var(--green);}
+  .badge.flag{background:var(--flag-bg);color:var(--flag);}
+  .flagnote{font-size:11.5px;color:var(--flag);margin-top:4px;}
+
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:14px 0 6px;}
+  label:first-of-type{margin-top:0;}
+  input,select{width:100%;border:1px solid var(--line);background:var(--canvas);border-radius:10px;padding:11px 12px;font-size:14.5px;color:var(--ink);font-family:inherit;}
+  input:focus,select:focus{outline:2px solid var(--navy);outline-offset:1px;}
+  .scanrow{display:flex;gap:8px;}
+  .scanrow input{flex:1;}
+  .scanbtn{background:var(--navy);color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  .scanbtn:active{opacity:.85;}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:5px;}
+
+  .primary{width:100%;background:var(--gold);color:var(--navy-dark);border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;margin-top:20px;cursor:pointer;}
+  .primary:active{transform:scale(.99);}
+  .primary:disabled{opacity:.5;cursor:not-allowed;}
+  .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--navy-dark);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  .empty{text-align:center;padding:50px 20px;color:var(--muted);}
+  .empty .ic{font-size:34px;margin-bottom:10px;}
+  .empty b{display:block;color:var(--ink);font-size:14.5px;margin-bottom:4px;}
+  .empty span{font-size:12.5px;}
+
+  .tabs{display:flex;border-top:1px solid var(--line);flex-shrink:0;background:var(--card);}
+  .tab{flex:1;text-align:center;padding:11px 4px 12px;cursor:pointer;color:var(--muted);}
+  .tab.active{color:var(--navy);}
+  :root[data-theme="dark"] .tab.active{color:#8FA8D9;}
+  .tab .ico{font-size:19px;display:block;margin-bottom:2px;}
+  .tab .lbl{font-size:10.5px;font-weight:600;}
+
+  .hidden{display:none !important;}
+  .syncbtn{background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .syncbtn:disabled{background:var(--muted);cursor:not-allowed;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="statusbar">
+    <div class="statusbar-top">
+      <span class="brand">PTB <span>Track&nbsp;&amp;&nbsp;Trace</span></span>
+      <button class="toggle" id="connToggle">Simulate offline</button>
+    </div>
+    <div class="conn">
+      <span class="dot" id="connDot"></span>
+      <span class="connlabel" id="connLabel">Online</span>
+      <span class="queuepill" id="queuePill">0 queued</span>
+    </div>
+  </div>
+
+  <!-- ROLE SELECT -->
+  <div class="screen" id="screen-role">
+    <h1>Select your node</h1>
+    <p class="sub">Choose the site you're capturing data for. This stays set for your shift.</p>
+    <div class="rolecard" data-role="Purchase Centre" data-icon="🧾">
+      <b>Purchase Centre</b><span>Grower transaction &amp; lot creation</span>
+    </div>
+    <div class="rolecard" data-role="Warehouse" data-icon="🏬">
+      <b>Warehouse / Godown</b><span>Lot receipt &amp; stock movement</span>
+    </div>
+    <div class="rolecard" data-role="GLT Unit" data-icon="🏭">
+      <b>GLT Processing Unit</b><span>Threshing &amp; parent-child linkage</span>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen hidden" id="screen-home">
+    <h1 id="homeTitle">Purchase Centre</h1>
+    <p class="sub">Today's activity at this node.</p>
+    <div class="statgrid">
+      <div class="statcard"><div class="n" id="statCaptured">0</div><div class="l">Lots captured today</div></div>
+      <div class="statcard"><div class="n" id="statQueued">0</div><div class="l">Pending sync</div></div>
+    </div>
+    <p class="sectiontitle">Recent activity</p>
+    <div id="homeList"></div>
+  </div>
+
+  <!-- CAPTURE -->
+  <div class="screen hidden" id="screen-capture">
+    <h1>New transaction</h1>
+    <p class="sub">Works fully offline — saved to this device and synced automatically.</p>
+
+    <label for="growerName">Grower name</label>
+    <input id="growerName" placeholder="e.g. Fazal Rehman">
+
+    <label for="lotId">Lot ID</label>
+    <div class="scanrow">
+      <input id="lotId" placeholder="Scan or enter tag ID" readonly>
+      <button class="scanbtn" id="scanBtn">Scan tag</button>
+    </div>
+    <div class="hint">Simulates a QR/RFID scan and generates a unique lot ID.</div>
+
+    <label for="weight">Weight (kg)</label>
+    <input id="weight" type="number" placeholder="e.g. 42.5" inputmode="decimal">
+
+    <label for="grade">Leaf grade</label>
+    <select id="grade">
+      <option>Grade A — Bright Lemon</option>
+      <option>Grade B — Orange</option>
+      <option>Grade C — Mahogany</option>
+    </select>
+
+    <button class="primary" id="saveBtn">Save transaction</button>
+  </div>
+
+  <!-- QUEUE -->
+  <div class="screen hidden" id="screen-queue">
+    <h1>Sync queue</h1>
+    <p class="sub" style="display:flex;align-items:center;justify-content:space-between;">
+      <span id="queueSub">Nothing waiting to sync.</span>
+      <button class="syncbtn" id="syncBtn">Sync now</button>
+    </p>
+    <div id="queueList"></div>
+  </div>
+
+  <div class="tabs hidden" id="tabs">
+    <div class="tab active" data-screen="home"><span class="ico">⌂</span><span class="lbl">Home</span></div>
+    <div class="tab" data-screen="capture"><span class="ico">＋</span><span class="lbl">Capture</span></div>
+    <div class="tab" data-screen="queue"><span class="ico">⇅</span><span class="lbl">Queue</span></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+(function(){
+  var state = {
+    role: null,
+    online: true,
+    seq: 1,
+    items: [] // {id,lotId,grower,weight,grade,status:'queued'|'synced'|'flagged',flagReason,time}
+  };
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  function showToast(msg){
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
+  function genLotId(){
+    var codes = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var s = 'PTB-';
+    for(var i=0;i<3;i++) s += codes[Math.floor(Math.random()*codes.length)];
+    s += '-' + Math.floor(1000+Math.random()*9000);
+    return s;
+  }
+
+  function setScreen(name){
+    ['role','home','capture','queue'].forEach(function(s){
+      $('screen-'+s).classList.toggle('hidden', s!==name);
+    });
+    if(name!=='role'){
+      $('tabs').classList.remove('hidden');
+      document.querySelectorAll('.tab').forEach(function(t){
+        t.classList.toggle('active', t.getAttribute('data-screen')===name);
+      });
+    }
+    if(name==='home') renderHome();
+    if(name==='queue') renderQueue();
+  }
+
+  document.querySelectorAll('.rolecard').forEach(function(card){
+    card.addEventListener('click', function(){
+      state.role = card.getAttribute('data-role');
+      $('homeTitle').textContent = state.role;
+      setScreen('home');
+    });
+  });
+
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.addEventListener('click', function(){ setScreen(tab.getAttribute('data-screen')); });
+  });
+
+  $('connToggle').addEventListener('click', function(){
+    state.online = !state.online;
+    $('connDot').classList.toggle('off', !state.online);
+    $('connLabel').textContent = state.online ? 'Online' : 'Offline';
+    $('connToggle').textContent = state.online ? 'Simulate offline' : 'Back online';
+    updateQueuePill();
+    if(state.online) showToast('Connection restored');
+    else showToast('Working offline — data saved on device');
+  });
+
+  $('scanBtn').addEventListener('click', function(){
+    $('lotId').value = genLotId();
+  });
+
+  $('saveBtn').addEventListener('click', function(){
+    var grower = $('growerName').value.trim();
+    var lotId = $('lotId').value.trim();
+    var weight = $('weight').value;
+    if(!grower || !lotId || !weight){
+      showToast('Fill in grower, lot ID and weight'); return;
+    }
+    state.items.unshift({
+      id: state.seq++, lotId: lotId, grower: grower, weight: weight,
+      grade: $('grade').value, status: 'queued', time: 'Just now'
+    });
+    $('growerName').value=''; $('lotId').value=''; $('weight').value='';
+    updateQueuePill();
+    showToast('Saved to device — queued for sync');
+    setScreen('home');
+  });
+
+  $('syncBtn').addEventListener('click', function(){
+    if(!state.online){ showToast('You are offline — cannot sync yet'); return; }
+    var pending = state.items.filter(function(i){ return i.status==='queued'; });
+    if(pending.length===0){ showToast('Nothing to sync'); return; }
+    pending.forEach(function(item, idx){
+      setTimeout(function(){
+        var flagged = Math.random() < 0.22;
+        item.status = flagged ? 'flagged' : 'synced';
+        if(flagged) item.flagReason = 'AI check: duplicate lot ID seen at another node within 2 hrs';
+        renderQueue(); renderHome(); updateQueuePill();
+      }, idx*350);
+    });
+    showToast('Syncing '+pending.length+' item(s)…');
+  });
+
+  function updateQueuePill(){
+    var n = state.items.filter(function(i){ return i.status==='queued'; }).length;
+    $('queuePill').textContent = n + (state.online? ' queued' : ' saved offline');
+    $('statQueued') && ($('statQueued').textContent = n);
+  }
+
+  function badgeFor(item){
+    if(item.status==='synced') return '<span class="badge synced">Synced</span>';
+    if(item.status==='flagged') return '<span class="badge flag">AI flagged</span>';
+    return '<span class="badge queued">Queued</span>';
+  }
+
+  function txCardHtml(item){
+    var html = '<div class="txcard"><div><div class="lotid">'+item.lotId+'</div>' +
+      '<div class="meta">'+item.grower+' · '+item.weight+' kg · '+item.time+'</div>';
+    if(item.status==='flagged') html += '<div class="flagnote">'+item.flagReason+'</div>';
+    html += '</div>'+badgeFor(item)+'</div>';
+    return html;
+  }
+
+  function renderHome(){
+    $('statCaptured').textContent = state.items.length;
+    updateQueuePill();
+    var recent = state.items.slice(0,4);
+    $('homeList').innerHTML = recent.length ? recent.map(txCardHtml).join('') :
+      '<div class="empty"><div class="ic">📋</div><b>No transactions yet</b><span>Tap Capture below to record your first lot.</span></div>';
+  }
+
+  function renderQueue(){
+    var pending = state.items.filter(function(i){return i.status==='queued';}).length;
+    $('queueSub').textContent = pending ? pending+' item(s) waiting to sync' : 'Nothing waiting to sync.';
+    $('syncBtn').disabled = !state.online || pending===0;
+    $('queueList').innerHTML = state.items.length ? state.items.map(txCardHtml).join('') :
+      '<div class="empty"><div class="ic">⇅</div><b>Queue is empty</b><span>Transactions you save will appear here until synced.</span></div>';
+  }
+
+  updateQueuePill();
+})();
+</script>
+</body>
+</html>
